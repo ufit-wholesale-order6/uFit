@@ -72,6 +72,12 @@
         class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm focus:border-matcha focus:ring-1 focus:ring-matcha outline-none">
     </div>
 
+    <div class="mt-2.5">
+      <label for="billingEmail" class="block text-xs font-700 text-inksoft mb-1">請求書送付先メールアドレス <span class="text-danger">必須</span></label>
+      <input id="billingEmail" type="email" inputmode="email" placeholder="例）invoice@example.co.jp"
+        class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm focus:border-matcha focus:ring-1 focus:ring-matcha outline-none">
+    </div>
+
     <div class="mt-2.5 relative">
       <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-inksoft" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -147,6 +153,9 @@
 const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfn_ijCZcJUpXjIFFJHNh45-th-VW3Plt7b7ojgLY3JRA7AiA/formResponse";
 const ENTRY_COMPANY   = "entry.1497839987";
 const ENTRY_ORDER     = "entry.791195811";
+// ↓ Googleフォームに「請求書送付先メールアドレス」の質問を追加したら、
+//   発行されたentry.XXXXXXXXXに書き換えてください（手順はチャットで案内した内容を参照）。
+const ENTRY_EMAIL      = "entry.1834217049";
 
 /* =========================================================
    商品マスタデータ（119商品）
@@ -274,6 +283,48 @@ const PRODUCTS = [
 ].map((p, i) => ({ ...p, id: i, sold: p.name.includes("売り切れ") }));
 
 /* =========================================================
+   検索シノニム辞書（日本語 ⇔ 英語）
+   商品名・カテゴリが英語表記でも、日本語の一般的な呼び方で検索できるようにする
+   ========================================================= */
+const SEARCH_SYNONYMS = [
+  ["プロテイン", "protein"],
+  ["ホエイ", "whey"],
+  ["ソイ", "soy"],
+  ["マット", "mat"],
+  ["ボール", "ball"],
+  ["ローラー", "roller"],
+  ["ローラ", "roller"],
+  ["バランス", "balance"],
+  ["チューブ", "tube"],
+  ["トランポリン", "trampoline"],
+  ["バイク", "bike"],
+  ["ポール", "pole"],
+  ["シェイカー", "shaker"],
+  ["ヨガ", "yoga"],
+  ["トレーニング", "training"],
+  ["エクササイズ", "exercise"],
+  ["リカバリー", "recovery"],
+  ["リリーサー", "releaser"],
+  ["バイブレーティング", "vibrating"],
+  ["バイブレーション", "vibrating"],
+  ["ジュニア", "junior"],
+  ["ワイド", "wide"],
+  ["パルス", "pulse"]
+];
+
+// 各商品に、シノニムを加味した検索用テキスト(searchText)を事前計算しておく
+PRODUCTS.forEach(p => {
+  let corpus = (p.name + " " + p.category).toLowerCase();
+  SEARCH_SYNONYMS.forEach(([ja, en]) => {
+    const jaLower = ja.toLowerCase();
+    const enLower = en.toLowerCase();
+    if (corpus.includes(enLower) && !corpus.includes(jaLower)) corpus += " " + jaLower;
+    if (corpus.includes(jaLower) && !corpus.includes(enLower)) corpus += " " + enLower;
+  });
+  p.searchText = corpus;
+});
+
+/* =========================================================
    状態管理
    ========================================================= */
 const quantities = {};                 // { productId: number }
@@ -285,6 +336,7 @@ const els = {
   search: document.getElementById('searchInput'),
   clearSearch: document.getElementById('clearSearch'),
   company: document.getElementById('companyName'),
+  email: document.getElementById('billingEmail'),
   lineCount: document.getElementById('lineCount'),
   summaryItemCount: document.getElementById('summaryItemCount'),
   summaryQtyCount: document.getElementById('summaryQtyCount'),
@@ -320,7 +372,7 @@ function render() {
   const grouped = CATEGORIES.map(cat => {
     const items = PRODUCTS.filter(p => p.category === cat).filter(p => {
       if (!isSearching) return true;
-      return p.name.toLowerCase().includes(keyword) || p.category.toLowerCase().includes(keyword);
+      return p.searchText.includes(keyword);
     });
     return { cat, items };
   }).filter(g => g.items.length > 0);
@@ -448,6 +500,19 @@ els.submitBtn.addEventListener('click', async () => {
     return;
   }
 
+  const billingEmail = els.email.value.trim();
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!billingEmail) {
+    alert('請求書送付先メールアドレスを入力してください。');
+    els.email.focus();
+    return;
+  }
+  if (!emailPattern.test(billingEmail)) {
+    alert('メールアドレスの形式が正しくありません。');
+    els.email.focus();
+    return;
+  }
+
   const orderItems = PRODUCTS
     .filter(p => (quantities[p.id] || 0) >= 1)
     .map(p => ({ name: p.name, qty: quantities[p.id] }));
@@ -461,6 +526,7 @@ els.submitBtn.addEventListener('click', async () => {
 
   const params = new URLSearchParams();
   params.append(ENTRY_COMPANY, companyName);
+  params.append(ENTRY_EMAIL, billingEmail);
   params.append(ENTRY_ORDER, orderJson);
 
   els.submitBtn.disabled = true;
