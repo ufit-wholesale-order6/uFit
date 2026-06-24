@@ -121,6 +121,50 @@
   </div>
 </div>
 
+<!-- ================= 注文確認モーダル ================= -->
+<div id="confirmModal" class="hidden fixed inset-0 z-50 bg-ink/50 flex items-end sm:items-center justify-center">
+  <div class="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] flex flex-col">
+    <div class="px-5 pt-5 pb-3 border-b border-line shrink-0">
+      <h2 class="font-display font-700 text-base">注文内容のご確認</h2>
+      <p class="text-xs text-inksoft mt-1">内容に間違いがなければ「注文を確定する」を押してください。</p>
+    </div>
+
+    <div class="px-5 py-4 overflow-y-auto flex-1">
+      <dl class="text-sm space-y-1.5 mb-4">
+        <div class="flex gap-2">
+          <dt class="text-inksoft shrink-0 w-28">会社名・団体名</dt>
+          <dd id="confirmCompany" class="font-500 break-all"></dd>
+        </div>
+        <div class="flex gap-2">
+          <dt class="text-inksoft shrink-0 w-28">請求書送付先</dt>
+          <dd id="confirmEmail" class="font-500 break-all"></dd>
+        </div>
+      </dl>
+
+      <div class="border border-line rounded-lg divide-y divide-line">
+        <div id="confirmItemsList"></div>
+      </div>
+
+      <div class="mt-3 flex items-center justify-between font-num text-sm font-700 px-1">
+        <span class="font-body font-700">合計（参考金額・税込）</span>
+        <span>¥<span id="confirmTotal">0</span></span>
+      </div>
+      <p class="text-[11px] text-inksoft mt-1.5 leading-relaxed">※表示価格は通常販売価格です。実際のご請求額は卸価格にて別途ご案内します。</p>
+    </div>
+
+    <div class="px-5 py-4 border-t border-line shrink-0 flex gap-3">
+      <button id="confirmBackBtn" type="button"
+        class="flex-1 rounded-lg border border-line py-2.5 text-sm font-700 font-display">
+        修正する
+      </button>
+      <button id="confirmSendBtn" type="button"
+        class="flex-1 rounded-lg bg-matcha hover:bg-matchadark text-white py-2.5 text-sm font-700 font-display">
+        注文を確定する
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ================= サンクス画面 ================= -->
 <div id="thanksScreen" class="hidden fixed inset-0 z-50 bg-paper flex items-center justify-center px-6">
   <div class="max-w-sm w-full text-center">
@@ -130,7 +174,7 @@
       </svg>
     </div>
     <h2 class="font-display font-900 text-xl mb-2">ご注文ありがとうございました</h2>
-    <p class="text-sm text-inksoft leading-relaxed">スプレッドシートおよびGAS側で処理を開始します。<br>担当者よりご連絡するまで、今しばらくお待ちください。</p>
+    <p class="text-sm text-inksoft leading-relaxed">ご注文内容を承りました。<br>担当者が確認のうえ、追ってご連絡いたします。</p>
     <button id="backBtn" type="button" class="mt-6 text-sm font-700 text-matcha underline underline-offset-2">フォームに戻る</button>
   </div>
 </div>
@@ -342,6 +386,13 @@ const els = {
   summaryQtyCount: document.getElementById('summaryQtyCount'),
   summaryTotal: document.getElementById('summaryTotal'),
   submitBtn: document.getElementById('submitBtn'),
+  confirmModal: document.getElementById('confirmModal'),
+  confirmCompany: document.getElementById('confirmCompany'),
+  confirmEmail: document.getElementById('confirmEmail'),
+  confirmItemsList: document.getElementById('confirmItemsList'),
+  confirmTotal: document.getElementById('confirmTotal'),
+  confirmBackBtn: document.getElementById('confirmBackBtn'),
+  confirmSendBtn: document.getElementById('confirmSendBtn'),
   thanks: document.getElementById('thanksScreen'),
   backBtn: document.getElementById('backBtn'),
   loading: document.getElementById('loadingOverlay'),
@@ -490,9 +541,11 @@ els.clearSearch.addEventListener('click', () => {
 });
 
 /* =========================================================
-   送信処理
+   送信処理（① 入力チェック→確認モーダル表示 ／ ② 確定ボタンで実送信）
    ========================================================= */
-els.submitBtn.addEventListener('click', async () => {
+let pendingOrder = null; // 確認モーダル表示中に保持しておく送信内容
+
+els.submitBtn.addEventListener('click', () => {
   const companyName = els.company.value.trim();
   if (!companyName) {
     alert('会社名・団体名を入力してください。');
@@ -515,21 +568,53 @@ els.submitBtn.addEventListener('click', async () => {
 
   const orderItems = PRODUCTS
     .filter(p => (quantities[p.id] || 0) >= 1)
-    .map(p => ({ name: p.name, qty: quantities[p.id] }));
+    .map(p => ({ name: p.name, qty: quantities[p.id], price: parsePrice(p.price) }));
 
   if (orderItems.length === 0) {
     alert('数量が1以上の商品が1件もありません。注文したい商品の数量を入力してください。');
     return;
   }
 
-  const orderJson = JSON.stringify(orderItems);
+  pendingOrder = { companyName, billingEmail, orderItems };
+  showConfirmModal(pendingOrder);
+});
+
+function showConfirmModal(order) {
+  els.confirmCompany.textContent = order.companyName;
+  els.confirmEmail.textContent = order.billingEmail;
+
+  const total = order.orderItems.reduce((s, it) => s + it.price * it.qty, 0);
+  els.confirmTotal.textContent = total.toLocaleString('ja-JP');
+
+  els.confirmItemsList.innerHTML = order.orderItems.map(it => `
+    <div class="flex items-center justify-between gap-3 px-3 py-2.5 text-sm">
+      <span class="flex-1 min-w-0">${escapeHtml(it.name)}</span>
+      <span class="font-num text-inksoft shrink-0">× ${it.qty}</span>
+      <span class="font-num font-700 shrink-0 w-20 text-right">¥${(it.price * it.qty).toLocaleString('ja-JP')}</span>
+    </div>
+  `).join('');
+
+  document.body.classList.add('overflow-hidden');
+  els.confirmModal.classList.remove('hidden');
+}
+
+els.confirmBackBtn.addEventListener('click', () => {
+  els.confirmModal.classList.add('hidden');
+  document.body.classList.remove('overflow-hidden');
+});
+
+els.confirmSendBtn.addEventListener('click', async () => {
+  if (!pendingOrder) return;
+  const { companyName, billingEmail, orderItems } = pendingOrder;
+
+  const orderJson = JSON.stringify(orderItems.map(it => ({ name: it.name, qty: it.qty })));
 
   const params = new URLSearchParams();
   params.append(ENTRY_COMPANY, companyName);
   params.append(ENTRY_EMAIL, billingEmail);
   params.append(ENTRY_ORDER, orderJson);
 
-  els.submitBtn.disabled = true;
+  els.confirmSendBtn.disabled = true;
   els.loading.classList.remove('hidden');
 
   try {
@@ -541,6 +626,7 @@ els.submitBtn.addEventListener('click', async () => {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: params.toString()
     });
+    els.confirmModal.classList.add('hidden');
     showThanks();
   } catch (err) {
     // ネットワーク自体に到達できない場合（オフライン等）のみここに来る
@@ -548,7 +634,7 @@ els.submitBtn.addEventListener('click', async () => {
     alert('通信に失敗しました。ネットワーク接続をご確認の上、もう一度お試しください。');
   } finally {
     els.loading.classList.add('hidden');
-    els.submitBtn.disabled = false;
+    els.confirmSendBtn.disabled = false;
   }
 });
 
