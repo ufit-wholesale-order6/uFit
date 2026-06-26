@@ -61,7 +61,7 @@
     <div class="flex items-center justify-between gap-3">
       <div class="flex items-baseline gap-2">
         <span class="font-display font-900 text-xl tracking-tight">uFit</span>
-        <span class="font-display font-700 text-xs text-inksoft">法人・大口発注フォーム</span>
+        <span class="font-display font-700 text-xs text-inksoft">大口発注フォーム</span>
       </div>
       <span id="lineCount" class="font-num text-xs text-inksoft">119 品中 119 品表示</span>
     </div>
@@ -75,6 +75,12 @@
     <div class="mt-2.5">
       <label for="billingEmail" class="block text-xs font-700 text-inksoft mb-1">請求書送付先メールアドレス <span class="text-danger">必須</span></label>
       <input id="billingEmail" type="email" inputmode="email" placeholder="例）invoice@example.co.jp"
+        class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm focus:border-matcha focus:ring-1 focus:ring-matcha outline-none">
+    </div>
+
+    <div class="mt-2.5">
+      <label for="phoneNumber" class="block text-xs font-700 text-inksoft mb-1">電話番号</label>
+      <input id="phoneNumber" type="tel" inputmode="tel" placeholder="例）03-6455-0189"
         class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm focus:border-matcha focus:ring-1 focus:ring-matcha outline-none">
     </div>
 
@@ -198,7 +204,8 @@ const GOOGLE_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfn_ijCZcJUpXj
 const ENTRY_COMPANY   = "entry.1497839987";
 const ENTRY_ORDER     = "entry.791195811";
 const ENTRY_EMAIL      = "entry.1834217049";
-
+const ENTRY_PHONE     = "entry.304194230";
+ 
 /* =========================================================
    商品マスタデータ（119商品）
    ========================================================= */
@@ -379,6 +386,7 @@ const els = {
   clearSearch: document.getElementById('clearSearch'),
   company: document.getElementById('companyName'),
   email: document.getElementById('billingEmail'),
+  phone: document.getElementById('phoneNumber'),
   lineCount: document.getElementById('lineCount'),
   summaryItemCount: document.getElementById('summaryItemCount'),
   summaryQtyCount: document.getElementById('summaryQtyCount'),
@@ -552,6 +560,7 @@ els.submitBtn.addEventListener('click', () => {
   }
 
   const billingEmail = els.email.value.trim();
+  const phoneNumber = els.phone.value.trim();
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!billingEmail) {
     alert('請求書送付先メールアドレスを入力してください。');
@@ -610,6 +619,7 @@ els.confirmSendBtn.addEventListener('click', async () => {
   const params = new URLSearchParams();
   params.append(ENTRY_COMPANY, companyName);
   params.append(ENTRY_EMAIL, billingEmail);
+  params.append(ENTRY_PHONE, phoneNumber);
   params.append(ENTRY_ORDER, orderJson);
 
   els.confirmSendBtn.disabled = true;
