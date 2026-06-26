@@ -55,17 +55,14 @@
 </head>
 <body class="text-ink antialiased pb-28">
 
-<header class="sticky top-0 z-30 bg-paper/95 backdrop-blur border-b border-line">
-  <div class="max-w-3xl mx-auto px-4 pt-4 pb-3">
-    <div class="flex items-center justify-between gap-3">
-      <div class="flex items-baseline gap-2">
-        <span class="font-display font-900 text-xl tracking-tight">uFit</span>
-        <span class="font-display font-700 text-xs text-inksoft">大口発注フォーム</span>
-      </div>
-      <span id="lineCount" class="font-num text-xs text-inksoft">119 品中 119 品表示</span>
+<div class="bg-paper px-4 pt-4 pb-2 border-b border-line">
+  <div class="max-w-3xl mx-auto">
+    <div class="flex items-baseline gap-2 mb-3">
+      <span class="font-display font-900 text-xl tracking-tight">uFit</span>
+      <span class="font-display font-700 text-xs text-inksoft">大口発注フォーム</span>
     </div>
 
-    <div class="mt-3">
+    <div>
       <label for="companyName" class="block text-xs font-700 text-inksoft mb-1">会社名・団体名 <span class="text-danger">必須</span></label>
       <input id="companyName" type="text" placeholder="例）株式会社サンプル / ◯◯ジム"
         class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm focus:border-matcha focus:ring-1 focus:ring-matcha outline-none">
@@ -85,16 +82,25 @@
 
     <div class="mt-2.5">
       <label for="phoneNumber" class="block text-xs font-700 text-inksoft mb-1">電話番号（半角数字のみ）</label>
-      <input id="phoneNumber" type="number" inputmode="numeric" placeholder="例）09012345678"
+      <input id="phoneNumber" type="number" inputmode="numeric" placeholder="例）0364550189"
         class="w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm focus:border-matcha focus:ring-1 focus:ring-matcha outline-none">
     </div>
+  </div>
+</div>
 
-    <div class="mt-2.5 relative">
+<header class="sticky top-0 z-30 bg-paper/95 backdrop-blur border-b border-line shadow-sm">
+  <div class="max-w-3xl mx-auto px-4 py-2.5">
+    <div class="flex items-center justify-between gap-3 mb-1.5">
+      <span class="font-display font-700 text-xs text-inksoft">商品一覧から数量を入力してください</span>
+      <span id="lineCount" class="font-num text-xs text-inksoft">119 品中 119 品表示</span>
+    </div>
+
+    <div class="relative">
       <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-inksoft" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
         <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
       </svg>
       <input id="searchInput" type="text" inputmode="search" placeholder="商品名・カラー・味で検索（例：抹茶 / グレー / Mat）"
-        class="w-full rounded-lg border border-line bg-white pl-9 pr-9 py-2.5 text-sm focus:border-matcha focus:ring-1 focus:ring-matcha outline-none">
+        class="w-full rounded-lg border border-line bg-white pl-9 pr-9 py-2 text-sm focus:border-matcha focus:ring-1 focus:ring-matcha outline-none">
       <button id="clearSearch" type="button" aria-label="検索をクリア" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-inksoft hover:text-ink">
         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
